@@ -1,5 +1,5 @@
 # Resume-Analyze-
-Here is a clean **README.md content** for your project 👉 **Resume-Analyze**:
+
 
 ---
 
