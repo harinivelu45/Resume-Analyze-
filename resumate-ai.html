@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ResuMate AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f9fafb;display:flex;height:100vh;overflow:hidden}
+  button{cursor:pointer;font-family:inherit}
+  input,textarea{font-family:inherit;outline:none}
+
+  /* Sidebar */
+  #sidebar{width:260px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;flex-shrink:0;height:100vh}
+  .logo{padding:20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px}
+  .logo-icon{width:34px;height:34px;background:#ede9fe;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .logo-text{font-size:18px;font-weight:700;color:#6366f1}
+  nav{flex:1;padding:12px 10px;overflow-y:auto}
+  .nav-btn{width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#4b5563;font-size:14px;font-weight:400;cursor:pointer;margin-bottom:2px;text-align:left;transition:all 0.15s}
+  .nav-btn:hover{background:#f3f4f6}
+  .nav-btn.active{background:#ede9fe;color:#6366f1;font-weight:600}
+  .nav-btn .chevron{margin-left:auto;opacity:0}
+  .nav-btn.active .chevron{opacity:1}
+  .sidebar-footer{padding:14px 12px;border-top:1px solid #f3f4f6;display:flex;flex-direction:column;gap:8px}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.15s}
+  .btn:hover{opacity:0.88}
+  .btn-primary{background:#6366f1;color:#fff;font-weight:600}
+  .btn-outline{background:#fff;border:1px solid #e5e7eb;color:#374151}
+  .btn-full{width:100%;justify-content:center}
+  .btn-sm{padding:6px 12px;font-size:13px}
+
+  /* Main */
+  #main{flex:1;overflow-y:auto;padding:28px 32px}
+
+  /* Page */
+  .page{display:none}
+  .page.active{display:block}
+  .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+  .page-title{font-size:24px;font-weight:700;color:#111827;margin-bottom:4px}
+  .page-sub{font-size:14px;color:#6b7280}
+
+  /* Cards */
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px}
+  .card-title{font-size:16px;font-weight:700;color:#111827;margin-bottom:4px}
+  .card-sub{font-size:13px;color:#6b7280}
+
+  /* Stat Cards */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+  .stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+  .stat-label{font-size:13px;color:#6b7280;margin-bottom:2px}
+  .stat-value{font-size:26px;font-weight:700;color:#111827;line-height:1}
+
+  /* Banner */
+  .banner{background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+  .banner-icon{width:36px;height:36px;background:#e0e7ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+  .banner-title{font-weight:600;font-size:15px;color:#1e1b4b;margin-bottom:3px}
+  .banner-text{font-size:13px;color:#4338ca}
+
+  /* Progress Bar */
+  .prog-wrap{margin-bottom:14px}
+  .prog-header{display:flex;justify-content:space-between;font-size:13px;font-weight:500;color:#374151;margin-bottom:5px}
+  .prog-bg{height:8px;background:#e5e7eb;border-radius:9999px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:9999px;transition:width 0.6s ease}
+
+  /* Bottom grid */
+  .bottom-grid{display:grid;grid-template-columns:1fr 360px;gap:20px}
+
+  /* Score Ring */
+  .ring-wrap{position:relative;display:inline-block}
+  .ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700}
+
+  /* Suggestions */
+  .suggestion{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:8px;font-size:13px;color:#374151;margin-bottom:8px}
+  .suggestion.error{background:#fef2f2;border:1px solid #fecaca}
+  .suggestion.warning{background:#fffbeb;border:1px solid #fde68a}
+  .suggestion.success{background:#f0fdf4;border:1px solid #bbf7d0}
+  .sug-icon{flex-shrink:0;margin-top:1px;font-size:15px}
+
+  /* Keyword tags */
+  .kw-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-size:13px}
+  .kw-found{background:#f0fdf4;border:1px solid #bbf7d0}
+  .kw-missing{background:#fef2f2;border:1px solid #fecaca}
+  .kw-badge{font-weight:600;font-size:12px}
+  .kw-found .kw-badge{color:#16a34a}
+  .kw-missing .kw-badge{color:#dc2626}
+
+  /* ATS hero */
+  .ats-hero{background:linear-gradient(135deg,#6366f1,#818cf8);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:32px;color:#fff}
+  .ats-ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+  .ats-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff}
+  .ats-title{font-size:13px;opacity:0.85;margin-bottom:4px}
+  .ats-score-big{font-size:38px;font-weight:800;line-height:1;margin-bottom:8px}
+  .ats-desc{font-size:13px;opacity:0.85}
+
+  /* History Table */
+  .hist-table{width:100%;border-collapse:collapse}
+  .hist-table th{padding:11px 20px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;background:#f9fafb}
+  .hist-table td{padding:13px 20px;border-top:1px solid #f3f4f6;font-size:14px;color:#374151}
+  .score-badge{display:inline-flex;align-items:center;border-radius:9999px;padding:3px 10px;font-size:13px;font-weight:600}
+  .score-good{background:#dcfce7;color:#16a34a}
+  .score-mid{background:#fef9c3;color:#ca8a04}
+  .score-low{background:#fef2f2;color:#dc2626}
+
+  /* Builder */
+  .builder-grid{display:grid;grid-template-columns:220px 1fr;gap:20px}
+  .section-nav{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px;height:fit-content}
+  .sec-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:none;background:transparent;font-size:14px;color:#374151;cursor:pointer;margin-bottom:2px;transition:all 0.15s}
+  .sec-btn:hover{background:#f3f4f6}
+  .sec-btn.active{background:#ede9fe;color:#6366f1;font-weight:600}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .form-group label{font-size:13px;font-weight:500;color:#374151;display:block;margin-bottom:6px}
+  .form-group input,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;color:#111827;transition:border 0.15s}
+  .form-group input:focus,.form-group textarea:focus{border-color:#6366f1}
+  .exp-card{border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-bottom:12px}
+  .exp-title{font-weight:600;font-size:15px;color:#111827}
+  .exp-company{font-size:13px;color:#6366f1;font-weight:500}
+  .exp-period{font-size:12px;color:#9ca3af;margin-top:2px}
+  .exp-desc{font-size:13px;color:#6b7280;margin-top:8px}
+  .exp-actions{display:flex;gap:6px}
+  .icon-btn{width:30px;height:30px;border-radius:6px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}
+  .icon-btn-edit{background:#f3f4f6;color:#6b7280}
+  .icon-btn-del{background:#fef2f2;color:#ef4444}
+  .skill-tag{display:inline-flex;align-items:center;gap:5px;background:#ede9fe;border-radius:9999px;padding:5px 12px;font-size:13px;font-weight:500;color:#4c1d95;margin:4px}
+  .skill-remove{background:none;border:none;cursor:pointer;color:#7c3aed;padding:0;display:flex;align-items:center;font-size:14px}
+  .add-skill-btn{display:inline-flex;align-items:center;gap:5px;background:#f3f4f6;border:1px dashed #d1d5db;border-radius:9999px;padding:5px 14px;font-size:13px;cursor:pointer;color:#6b7280;margin:4px}
+
+  /* Upload zone */
+  .upload-zone{border:2px dashed #c7d2fe;border-radius:12px;padding:32px 24px;text-align:center;background:#f5f3ff;margin-bottom:24px}
+  .upload-icon{width:56px;height:56px;background:#ede9fe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px}
+  .upload-title{font-weight:600;font-size:15px;color:#4338ca;margin-bottom:4px}
+  .upload-sub{font-size:13px;color:#6b7280;margin-bottom:16px}
+
+  /* Score rings row */
+  .rings-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+  .ring-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px}
+
+  /* Two col */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+
+  /* Responsive tweaks */
+  @media(max-width:900px){
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+    .bottom-grid{grid-template-columns:1fr}
+    .builder-grid{grid-template-columns:1fr}
+    .rings-row{grid-template-columns:1fr}
+    .two-col{grid-template-columns:1fr}
+  }
+  @media(max-width:600px){
+    #sidebar{width:200px}
+    #main{padding:16px}
+    .stat-grid{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+    </div>
+    <span class="logo-text">ResuMate AI</span>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="navigate('dashboard',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+    <button class="nav-btn" onclick="navigate('analyzer',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Analyzer
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+    <button class="nav-btn" onclick="navigate('ats',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      ATS Score
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+    <button class="nav-btn" onclick="navigate('builder',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Resume Builder
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+    <button class="nav-btn" onclick="navigate('history',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.96"/></svg>
+      History
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-outline btn-full">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Sign In
+    </button>
+    <button class="btn btn-primary btn-full">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      Create Account
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="banner">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div class="banner-icon">ℹ️</div>
+        <div>
+          <div class="banner-title">Sign in to save your progress</div>
+          <div class="banner-text">You are currently browsing as a guest. Create an account to save your resume history and track improvements.</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="flex-shrink:0">Create Free Account</button>
+    </div>
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard Overview</div>
+        <div class="page-sub">Analysis for: <strong style="color:#374151">Demo_Resume_JohnDoe.pdf</strong></div>
+      </div>
+      <button class="btn btn-primary" onclick="navigate('analyzer',null)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        Analyze New Resume
+      </button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#ede9fe">🏆</div>
+        <div><div class="stat-label">Overall Score</div><div class="stat-value">72/100</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dbeafe">🎯</div>
+        <div><div class="stat-label">ATS Score</div><div class="stat-value">72/100</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dcfce7">⚡</div>
+        <div><div class="stat-label">Job Match %</div><div class="stat-value">68%</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef3c7">📈</div>
+        <div><div class="stat-label">Versions Tracked</div><div class="stat-value">4</div></div>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-title">Resume Versions Tracker</div>
+        <div class="card-sub" style="margin-bottom:16px">See how your ATS score improves with each upload.</div>
+        <canvas id="versionsChart" height="180"></canvas>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="width:28px;height:28px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div class="card-title" style="margin:0">ATS Format Checker</div>
+        </div>
+        <div class="card-sub" style="margin-bottom:18px">Is your resume easily readable by bots?</div>
+        <div id="atsCheckerBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYZER -->
+  <div id="page-analyzer" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Resume Analyzer</div>
+        <div class="page-sub">Upload your resume and get instant AI-powered feedback</div>
+      </div>
+    </div>
+    <div class="upload-zone">
+      <div class="upload-icon">📤</div>
+      <div class="upload-title">Demo_Resume_JohnDoe.pdf — uploaded</div>
+      <div class="upload-sub">Supports PDF, DOCX — max 5MB</div>
+      <button class="btn btn-primary">Replace File</button>
+    </div>
+    <div class="rings-row">
+      <div class="ring-card">
+        <div class="ring-wrap" style="width:80px;height:80px;flex-shrink:0">
+          <svg width="80" height="80" style="transform:rotate(-90deg)">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#6366f1" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="57" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-label" style="color:#6366f1">72</div>
+        </div>
+        <div><div style="font-size:13px;color:#6b7280">Overall Score</div><div style="font-size:20px;font-weight:700;color:#111827">72/100</div></div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-wrap" style="width:80px;height:80px;flex-shrink:0">
+          <svg width="80" height="80" style="transform:rotate(-90deg)">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#2563eb" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="57" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-label" style="color:#2563eb">72</div>
+        </div>
+        <div><div style="font-size:13px;color:#6b7280">ATS Compatibility</div><div style="font-size:20px;font-weight:700;color:#111827">72/100</div></div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-wrap" style="width:80px;height:80px;flex-shrink:0">
+          <svg width="80" height="80" style="transform:rotate(-90deg)">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#16a34a" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="64" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-label" style="color:#16a34a">68</div>
+        </div>
+        <div><div style="font-size:13px;color:#6b7280">Job Match</div><div style="font-size:20px;font-weight:700;color:#111827">68/100</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">Improvement Suggestions</div>
+      <div class="suggestion error"><span class="sug-icon">❌</span> Missing quantified achievements in Work Experience section</div>
+      <div class="suggestion warning"><span class="sug-icon">⚠️</span> Add AWS or cloud platform skills to improve job match</div>
+      <div class="suggestion warning"><span class="sug-icon">⚠️</span> Summary section is too brief — aim for 3–4 sentences</div>
+      <div class="suggestion success"><span class="sug-icon">✅</span> Strong use of action verbs throughout experience bullets</div>
+      <div class="suggestion success"><span class="sug-icon">✅</span> Education section is well-structured and complete</div>
+      <div class="suggestion error"><span class="sug-icon">❌</span> No mention of CI/CD tools which appear in 74% of matching jobs</div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Resume Strength Breakdown</div>
+        <div class="card-sub" style="margin-bottom:12px">Across 6 key dimensions</div>
+        <canvas id="radarChart" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Keyword Analysis</div>
+        <div class="card-sub" style="margin-bottom:14px">Based on target job description</div>
+        <div id="keywordList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ATS SCORE -->
+  <div id="page-ats" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">ATS Score</div>
+        <div class="page-sub">Detailed breakdown of your ATS compatibility score</div>
+      </div>
+    </div>
+    <div class="ats-hero">
+      <div class="ats-ring-wrap">
+        <svg width="120" height="120" style="transform:rotate(-90deg)">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="10"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="88" stroke-linecap="round"/>
+        </svg>
+        <div class="ats-ring-val">72</div>
+      </div>
+      <div>
+        <div class="ats-title">Overall ATS Score</div>
+        <div class="ats-score-big">72 / 100</div>
+        <div class="ats-desc">Your resume is <strong>Good</strong> — a few tweaks will push it past 85.</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:18px">Category Breakdown</div>
+      <div id="atsBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Score by Category</div>
+      <div class="card-sub" style="margin-bottom:14px">Visual comparison across all ATS criteria</div>
+      <canvas id="atsBarChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- RESUME BUILDER -->
+  <div id="page-builder" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Resume Builder</div>
+        <div class="page-sub">Build and edit your resume section by section</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF
+        </button>
+      </div>
+    </div>
+    <div class="builder-grid">
+      <div class="section-nav">
+        <button class="sec-btn active" onclick="switchSection('personal',this)">👤 Personal Info</button>
+        <button class="sec-btn" onclick="switchSection('experience',this)">💼 Work Experience</button>
+        <button class="sec-btn" onclick="switchSection('education',this)">🎓 Education</button>
+        <button class="sec-btn" onclick="switchSection('skills',this)">⭐ Skills</button>
+      </div>
+      <div>
+        <!-- Personal -->
+        <div id="sec-personal" class="card">
+          <div class="card-title" style="margin-bottom:18px">Personal Information</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Full Name</label><input value="John Doe"/></div>
+            <div class="form-group"><label>Job Title</label><input value="Frontend Developer"/></div>
+            <div class="form-group"><label>Email</label><input value="john@example.com"/></div>
+            <div class="form-group"><label>Phone</label><input value="+1 (555) 123-4567"/></div>
+            <div class="form-group"><label>LinkedIn</label><input value="linkedin.com/in/johndoe"/></div>
+            <div class="form-group"><label>Location</label><input value="San Francisco, CA"/></div>
+          </div>
+          <div class="form-group" style="margin-top:16px">
+            <label>Professional Summary</label>
+            <textarea rows="3" style="padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;resize:vertical;width:100%">Experienced Frontend Developer with 4+ years building scalable React applications. Passionate about UI/UX and clean code.</textarea>
+          </div>
+          <div style="margin-top:16px;text-align:right">
+            <button class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+        <!-- Experience -->
+        <div id="sec-experience" class="card" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+            <div class="card-title">Work Experience</div>
+            <button class="btn btn-primary btn-sm">+ Add Entry</button>
+          </div>
+          <div class="exp-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div class="exp-title">Senior Frontend Developer</div>
+                <div class="exp-company">TechCorp Inc.</div>
+                <div class="exp-period">Jan 2022 – Present</div>
+              </div>
+              <div class="exp-actions">
+                <button class="icon-btn icon-btn-edit">✏️</button>
+                <button class="icon-btn icon-btn-del">🗑️</button>
+              </div>
+            </div>
+            <div class="exp-desc">Led development of React-based dashboard serving 50k+ users. Improved performance by 40% through code splitting and lazy loading.</div>
+          </div>
+          <div class="exp-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div class="exp-title">Frontend Developer</div>
+                <div class="exp-company">StartupXYZ</div>
+                <div class="exp-period">Mar 2020 – Dec 2021</div>
+              </div>
+              <div class="exp-actions">
+                <button class="icon-btn icon-btn-edit">✏️</button>
+                <button class="icon-btn icon-btn-del">🗑️</button>
+              </div>
+            </div>
+            <div class="exp-desc">Built responsive UIs with React and TypeScript. Collaborated with design team on a shared component library used across 3 products.</div>
+          </div>
+        </div>
+        <!-- Education -->
+        <div id="sec-education" class="card" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+            <div class="card-title">Education</div>
+            <button class="btn btn-primary btn-sm">+ Add Entry</button>
+          </div>
+          <div class="exp-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div class="exp-title">B.S. Computer Science</div>
+                <div class="exp-company">State University</div>
+                <div class="exp-period">2016 – 2020 · GPA: 3.7</div>
+              </div>
+              <div class="exp-actions">
+                <button class="icon-btn icon-btn-edit">✏️</button>
+                <button class="icon-btn icon-btn-del">🗑️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Skills -->
+        <div id="sec-skills" class="card" style="display:none">
+          <div class="card-title" style="margin-bottom:16px">Skills</div>
+          <div id="skillsContainer">
+            <span class="skill-tag">React <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">TypeScript <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">Node.js <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">CSS <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">REST API <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">Git <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">Agile <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">Figma <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">HTML5 <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <span class="skill-tag">Jest <button class="skill-remove" onclick="removeSkill(this)">✕</button></span>
+            <button class="add-skill-btn" onclick="addSkill()">+ Add Skill</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="page-history" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">History</div>
+        <div class="page-sub">All your previously analyzed resumes</div>
+      </div>
+      <button class="btn btn-outline">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.96"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#ede9fe">📄</div>
+        <div><div class="stat-label">Total Resumes</div><div class="stat-value">4</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dcfce7">📈</div>
+        <div><div class="stat-label">Avg. Score</div><div class="stat-value">61.8</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#dbeafe">🕐</div>
+        <div><div class="stat-label">Last Upload</div><div class="stat-value" style="font-size:20px">Jan 15</div></div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 24px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:15px;color:#111827">Uploaded Resumes</div>
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>File Name</th><th>Date</th><th>Score</th><th>Versions</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center">📄</div><span style="font-weight:500;color:#111827">Demo_Resume_JohnDoe.pdf</span></div></td>
+            <td style="color:#6b7280">2024-01-15</td>
+            <td><span class="score-badge score-good">72/100</span></td>
+            <td>4</td>
+            <td><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:#ede9fe;border:none;color:#6366f1;font-weight:500">View</button><button class="btn btn-sm btn-outline">Download</button></div></td>
+          </tr>
+          <tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center">📄</div><span style="font-weight:500;color:#111827">Resume_v2_Updated.pdf</span></div></td>
+            <td style="color:#6b7280">2024-01-10</td>
+            <td><span class="score-badge score-mid">65/100</span></td>
+            <td>3</td>
+            <td><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:#ede9fe;border:none;color:#6366f1;font-weight:500">View</button><button class="btn btn-sm btn-outline">Download</button></div></td>
+          </tr>
+          <tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center">📄</div><span style="font-weight:500;color:#111827">JohnDoe_TechResume.pdf</span></div></td>
+            <td style="color:#6b7280">2024-01-02</td>
+            <td><span class="score-badge score-mid">58/100</span></td>
+            <td>2</td>
+            <td><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:#ede9fe;border:none;color:#6366f1;font-weight:500">View</button><button class="btn btn-sm btn-outline">Download</button></div></td>
+          </tr>
+          <tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;background:#ede9fe;border-radius:6px;display:flex;align-items:center;justify-content:center">📄</div><span style="font-weight:500;color:#111827">Resume_Initial.pdf</span></div></td>
+            <td style="color:#6b7280">2023-12-28</td>
+            <td><span class="score-badge score-low">52/100</span></td>
+            <td>1</td>
+            <td><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:#ede9fe;border:none;color:#6366f1;font-weight:500">View</button><button class="btn btn-sm btn-outline">Download</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+// NAV
+function navigate(pageId, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) { btn.classList.add('active'); return; }
+  const map = {dashboard:0,analyzer:1,ats:2,builder:3,history:4};
+  document.querySelectorAll('.nav-btn')[map[pageId]].classList.add('active');
+}
+
+// BUILDER section switch
+function switchSection(id, btn) {
+  ['personal','experience','education','skills'].forEach(s => {
+    document.getElementById('sec-' + s).style.display = 'none';
+  });
+  document.getElementById('sec-' + id).style.display = 'block';
+  document.querySelectorAll('.sec-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Remove skill tag
+function removeSkill(btn) { btn.closest('.skill-tag').remove(); }
+
+// Add skill
+function addSkill() {
+  const name = prompt('Enter skill name:');
+  if (!name || !name.trim()) return;
+  const container = document.getElementById('skillsContainer');
+  const addBtn = container.querySelector('.add-skill-btn');
+  const tag = document.createElement('span');
+  tag.className = 'skill-tag';
+  tag.innerHTML = name.trim() + ' <button class="skill-remove" onclick="removeSkill(this)">✕</button>';
+  container.insertBefore(tag, addBtn);
+}
+
+// ATS Bars (Dashboard)
+const atsCats = [
+  {label:'Formatting & Layout', score:75, color:'#eab308'},
+  {label:'Section Structure',   score:85, color:'#22c55e'},
+  {label:'Readability',         score:70, color:'#eab308'},
+  {label:'Keyword Density',     score:60, color:'#f97316'},
+  {label:'Contact Info',        score:95, color:'#22c55e'},
+  {label:'File Compatibility',  score:90, color:'#22c55e'},
+];
+
+function renderBars(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = atsCats.map(cat => `
+    <div class="prog-wrap">
+      <div class="prog-header"><span>${cat.label}</span><span>${cat.score}/100</span></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${cat.score}%;background:${cat.color}"></div></div>
+    </div>`).join('');
+}
+renderBars('atsCheckerBars');
+renderBars('atsBars');
+
+// Keywords
+const keywords = [
+  {kw:'React',    found:true,  count:8},
+  {kw:'TypeScript',found:true, count:5},
+  {kw:'Node.js',  found:true,  count:3},
+  {kw:'AWS',      found:false, count:0},
+  {kw:'Docker',   found:false, count:0},
+  {kw:'Agile',    found:true,  count:2},
+  {kw:'REST API', found:true,  count:4},
+  {kw:'CI/CD',    found:false, count:0},
+];
+document.getElementById('keywordList').innerHTML = keywords.map(k => `
+  <div class="kw-item ${k.found ? 'kw-found' : 'kw-missing'}">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span>${k.found ? '✅' : '❌'}</span>
+      <span style="font-weight:500;color:#374151">${k.kw}</span>
+    </div>
+    <span class="kw-badge">${k.found ? '×' + k.count : 'Missing'}</span>
+  </div>`).join('');
+
+// Charts — init after DOM ready
+window.addEventListener('load', () => {
+  // Versions Line Chart
+  new Chart(document.getElementById('versionsChart'), {
+    type: 'line',
+    data: {
+      labels: ['v1','v2','v3','v4'],
+      datasets: [{
+        label: 'ATS Score',
+        data: [52,60,65,72],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' Score: ' + ctx.raw } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 12 } } },
+        y: { min: 40, max: 100, grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { size: 12 } } }
+      }
+    }
+  });
+
+  // Radar Chart
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: ['Skills','Experience','Education','Keywords','Formatting','Impact'],
+      datasets: [{
+        data: [78,65,85,60,75,55],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.18)',
+        borderWidth: 2,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false },
+          grid: { color: '#e5e7eb' },
+          pointLabels: { color: '#6b7280', font: { size: 12 } }
+        }
+      }
+    }
+  });
+
+  // ATS Bar Chart
+  new Chart(document.getElementById('atsBarChart'), {
+    type: 'bar',
+    data: {
+      labels: atsCats.map(c => c.label),
+      datasets: [{
+        data: atsCats.map(c => c.score),
+        backgroundColor: atsCats.map(c => c.color),
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 11 }, maxRotation: 30 } },
+        y: { min: 0, max: 100, grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { size: 11 } } }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
